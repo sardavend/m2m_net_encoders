@@ -1,0 +1,42 @@
+let dgram = require('dgram');
+let fs = require('fs');
+//let port = 41230;
+let defaultSize = 16;
+
+function Client(remoteIP, port){
+	let inStream = fs.createReadStream(__filename);
+	let socket = dgram.createSocket('udp4');
+
+	inStream.on('readable', function(){
+		sendData();
+	});
+
+	function sendData(){
+		let message = inStream.read(defaultSize);
+		if(!message){
+			return socket.unref();
+		}
+		socket.send(message, 0, message.length, port, remoteIP, (err, bytes)=>{
+			sendData();
+		});
+	}
+}
+
+function Server(){
+	let socket = dgram.createSocket('udp4');
+
+	socket.on('message', (msg, rinfo) => {
+		process.stdout.write(msg.toString());
+	});
+
+	socket.on('listining', () => console.log('Server ready: ', socket.address()));
+
+	socket.bind(port)
+
+}
+
+if (process.argv[2] === 'client') {
+	new Client(process.argv[3], process.argv[4]);
+} else {
+	new Server();
+}
