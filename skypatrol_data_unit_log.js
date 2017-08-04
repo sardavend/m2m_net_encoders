@@ -4,6 +4,7 @@ const co = require('co');
 const persistenceOpen = require('./data_access.js');
 // const persistenceOpen = require('./persistence.js').connect(url);
 const writeToDataUnitLog = require('./data_access.js').writeToDataUnitLog;
+const writeToRawData = require('./data_access.js').writeToRawData;
 // var all = require('bluebird').all
 const xchange = 'main_valve';
 
@@ -35,8 +36,11 @@ co(persistenceOpen.connect(url)).then(() =>{
         function logMessage(msg){
             let routingKey = msg.fields.routingKey;
             let content = msg.content.toString();
-            co(writeToDataUnitLog(JSON.parse(content)))
+            let contentJson = JSON.parse(content);
+            co(writeToDataUnitLog(contentJson))
             .then(() => {
+                return co(writeToRawData(contentJson));
+            }).then(()=>{
                 console.log(` [x] ${routingKey}:${content}`)
                 ch.ack(msg);
             });

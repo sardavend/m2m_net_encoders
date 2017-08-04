@@ -1,5 +1,5 @@
 const co = require('co');
-const getUnitInfo = require('./data_access.js').getUnitInfo;
+const getUnitInfo = require('../data_access.js').getUnitInfo;
 const reverseGeocoding= require('./reversegeocoding');
 
 /*************SKYPATROL ******************/

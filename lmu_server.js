@@ -7,7 +7,7 @@ const co = require('co');
 const lmuDecoder= require('./m2m_decoders/lmu_decoder');
 const reverseGeocoding = require('./reversegeocoding.js');
 const dataAccessConnect = require('./data_access.js');
-const port = 1996;
+const port = 8006;
 const xchange= 'main_valve';
 
 const url = 'mongodb://imonnetplus.com.bo:27017/platform2';
@@ -43,7 +43,7 @@ function LMU_Server(chan){
 
 
     })
-    serverClientCalamp.listen(8000,() => {
+    serverClientCalamp.listen(8005,() => {
         winston.log('debug',`Server Calamp Clients started on port 8000`);
         console.log(`Server Calamp Clients started on port 8000`);
 

@@ -1,6 +1,8 @@
 const MongoClient = require('mongodb').MongoClient;
 const ObjectId = require('mongodb').ObjectID;
 
+const co = require('co');
+
 
 
 /*******Collections  **************/
@@ -28,7 +30,7 @@ function * writeToDataUnitLog(message){
 }
 
 function * writeToRawData(message){
-    message["unitInstanceId"] = Object(message["unitInstanceId"]);
+    message["unitInstanceId"] = ObjectId(message["unitInstanceId"]);
     message["updateTime"] = new Date(message["updateTime"]);
     yield save(rawDataCol, message);
 }
@@ -40,7 +42,55 @@ function* getUnitInfo(unitId) {
     if (result !== null){
         return result;
     } 
-    throw new Error('unregistered unit');
+    // throw new Error('unregistered unit');
+    registerUnit(unitId)
+    .then(newUnit => newUnit);
+}
+
+function getNewUnitObject(unitId){
+    return {
+        "id_grupo" : null,
+        "empresa" : "SIN-EMPRESA",
+        "equipments" : [],
+        "transmission" : null,
+        "estado" : {
+            "visitas" : [],
+            "distancia" : 0
+        },
+        "owners" : [],
+        "setting_id" : null,
+        "wheelDrive" : null,
+        "placa" : "",
+        "fuel" : null,
+        "state" : true,
+        "loadCapacity" : null,
+        "enginePower" : null,
+        "descripcion" : "SIN-REGISTRO",
+        "dispositivo_actual" : unitId,
+        "icono" : "icon-icon_cart",
+        "sensores" : {
+            "temperatura" : false,
+            "compresion" : false,
+            "puerta" : false
+        },
+        "dispositivo_info" : {
+            "modelo" : "",
+            "id" : unitId,
+            "marca" : ""
+        },
+        "riderShip" : null,
+        "estado_actual" : {
+            "isActive" : false
+        }
+    }
+}
+function registerUnit(unitId) {
+    return co(function* (){
+        let col = db.collection(unitsCol)
+        let newUnit = getNewUnitObject(unitId);
+        let result = yield db.insertOne(newUnit);
+        return yield db.findOne({"_id":result["_id"]})
+    })
 }
 
 function* getDriverInfo(driverId){
@@ -56,6 +106,7 @@ function* getDriverInfo(driverId){
 module.exports = {
     connect,
     writeToDataUnitLog,
+    writeToRawData,
     getUnitInfo,
     getDriverInfo,
 }
