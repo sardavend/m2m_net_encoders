@@ -26,7 +26,14 @@ function LMU_Server(chan){
 
     function broadcast(message){
         clients.forEach(client => {
-            client.write(message);
+            try {
+                client.write(message);
+            } catch (e){
+                console.log("An error has ocurred when trying to replicate to clients")
+                winston.log("An error has ocurred when trying to replicate to clients")
+                winston.log('error', e.toString())
+
+            }
         })
     }
 
@@ -48,6 +55,9 @@ function LMU_Server(chan){
         console.log(`Server Calamp Clients started on port 8000`);
 
     })
+    serverClientCalamp.on('error',err => {
+        console.log(err);
+    })
 
     server.on('listening',() => {
         let address = server.address();
@@ -59,6 +69,7 @@ function LMU_Server(chan){
         winston.log(msg);
         let decodedMessage= lmuDecoder.decodeMessage(msg);
         let ackMessage = lmuDecoder.generateAckMessage(msg);
+
         co(lmuDecoder.getPotableMessage(decodedMessage))
         .then(pMess => {
             console.log(`Potable Message is: ${pMess}`);

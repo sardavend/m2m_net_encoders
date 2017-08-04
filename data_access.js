@@ -22,6 +22,7 @@ function* save(coll, insertObject){
     yield db.collection(coll).insert(insertObject);
 }
 
+
 function * writeToDataUnitLog(message){
     message["unitInstanceId"] = ObjectId(message["unitInstanceId"]);
     message["updateTime"] = new Date(message["updateTime"]);
@@ -33,6 +34,21 @@ function * writeToRawData(message){
     message["unitInstanceId"] = ObjectId(message["unitInstanceId"]);
     message["updateTime"] = new Date(message["updateTime"]);
     yield save(rawDataCol, message);
+}
+/**
+ * 
+ * @param {string} uiid 
+ * @param {Date} updateTime 
+ */
+function getUnitStatusId(uiid,updateTime){
+    return `${uiid}/${updateTime.toISOString.split('T')[0]}`
+}
+
+function writeToUnitStatus(message){
+    return co(function* (){
+        let unitStatusId = getUnitStatusId(message["unitInstanceId"], new Date(message["updateTime"]))
+        console.log(`Unit Status id is: ${unitStatusId}`);
+    })
 }
 
 function* getUnitInfo(unitId) {
