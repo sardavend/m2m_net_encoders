@@ -29,7 +29,7 @@ function getPotableMessage(decodedMessage) {
     let p = new Promise((resolve,reject) => {
         co(getUnitInfo(decodedMessage["mobileId"]))
         .then(unitInfo => {
-            console.log(`unitInfo is: ${unitInfo}`);
+            console.log(`unitInfo is: ${JSON.stringify(unitInfo["dispositivo_actual"])}`);
             companyId = unitInfo["empresa"];
             potableMessage["unitInstanceId"] = unitInfo["_id"];
             potableMessage["unitId"] = unitInfo["dispositivo_actual"];
@@ -50,9 +50,10 @@ function getPotableMessage(decodedMessage) {
                     //this data is actually the last know driver or the last identified driver
                     driverKeyId = (decodedMessage["accumList"][3]).toString('16').toUpperCase();
                     return co(getDriverInfo(driverKeyId))
-                    driverKeyId += "*";
+                    // driverKeyId += "*";
                 }
             }
+            //there is no driver info in the message (N/A)
             return new Promise((resolve, reject) => {
                 resolve(null)
             })
