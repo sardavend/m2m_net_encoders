@@ -60,8 +60,12 @@ function* getUnitInfo(unitId) {
         return result;
     } 
     // throw new Error('unregistered unit');
+<<<<<<< HEAD
     return registerUnit(unitId);
     /*
+=======
+    return co(registerUnit(unitId))
+>>>>>>> a0a627270c674afaa1967bee0c4a89bf1e158d3e
     .then(newUnit => {
         console.log(newUnit);
         console.log(`a new unit was registered ${newUnit}`);
@@ -106,16 +110,22 @@ function getNewUnitObject(unitId){
         }
     }
 }
+<<<<<<< HEAD
 function* registerUnit(unitId) {
     console.log(`registering new Unit ${unitId}`)
-    let col = db.collection(unitsCol)
-    let newUnit = getNewUnitObject(unitId);
-    try{
-        let result = yield col.insertOne(newUnit);
-        return yield col.findOne({"_id":result["_id"]});
-    } catch (e){
-        console.log(`An error has ocurred when registering a new unit: ${e}`);
-    }
+=======
+function registerUnit(unitId) {
+    console.log(`registering new Unit ${unitId}`)
+    return co(function* (){
+>>>>>>> a0a627270c674afaa1967bee0c4a89bf1e158d3e
+        let col = db.collection(unitsCol)
+        let newUnit = getNewUnitObject(unitId);
+        try{
+            let result = yield col.insertOne(newUnit);
+            return yield col.findOne({"_id":result["_id"]});
+        } catch (e){
+            console.log(`An error has ocurred when registering a new unit: ${e}`);
+        }
 }
 
 function* getDriverInfo(driverId){
