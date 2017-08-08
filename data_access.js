@@ -106,8 +106,8 @@ function getNewUnitObject(unitId){
     }
 }
 function registerUnit(unitId) {
+    console.log(`registering new Unit ${unitId}`)
     return co(function* (){
-        console.log(`registering new Unit ${unitId}`)
         let col = db.collection(unitsCol)
         let newUnit = getNewUnitObject(unitId);
         try{
