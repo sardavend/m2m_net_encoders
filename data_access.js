@@ -8,8 +8,9 @@ const co = require('co');
 /*******Collections  **************/
 const unitsCol = 'vehiculoTest';
 const driverCol = 'driver';
-const dataUnitColl = 'data_unit_log';
+const dataUnitColl = 'unitDataLog';
 const rawDataCol = 'rawdata';
+const unitStateCol = 'unitState';
 
 
 var db;
@@ -20,6 +21,9 @@ function* connect(url) {
 
 function* save(coll, insertObject){
     yield db.collection(coll).insert(insertObject);
+}
+function* update(coll,cond, updateObject){
+    yield db.collection(coll).update(cond, updateObject,{"upsert":true});
 }
 
 
@@ -35,13 +39,10 @@ function * writeToRawData(message){
     message["updateTime"] = new Date(message["updateTime"]);
     yield save(rawDataCol, message);
 }
-/**
- * 
- * @param {string} uiid 
- * @param {Date} updateTime 
- */
-function getUnitStatusId(uiid,updateTime){
-    return `${uiid}/${updateTime.toISOString.split('T')[0]}`
+
+function * updateUnitState(message){
+    let cond ={"_id":message["_id"]};
+    yield update(unitStateCol, cond,  message);
 }
 
 function writeToUnitStatus(message){
@@ -60,13 +61,18 @@ function* getUnitInfo(unitId) {
         return result;
     } 
     // throw new Error('unregistered unit');
-    return registerUnit(unitId);
-    /*
-    .then(newUnit => {
-        console.log(newUnit);
-        console.log(`a new unit was registered ${newUnit}`);
-        return newUnit;
-    });*/
+    // return registerUnit(unitId);
+
+    console.log(`registering new Unit ${unitId}`)
+    col = db.collection(unitsCol)
+    let newUnitObj = getNewUnitObject(unitId);
+    try{
+        let newUnit = yield col.insertOne(newUnitObj);
+        return yield col.findOne({"_id":newUnit["insertedId"]});
+    } catch (e){
+        console.log(`An error has ocurred when registering a new unit: ${e}`);
+    }
+    
 }
 
 function getNewUnitObject(unitId){
@@ -112,7 +118,7 @@ function* registerUnit(unitId) {
     let newUnit = getNewUnitObject(unitId);
     try{
         let result = yield col.insertOne(newUnit);
-        return yield col.findOne({"_id":result["_id"]});
+        return yield col.findOne({"_id":result["insertedId"]});
     } catch (e){
         console.log(`An error has ocurred when registering a new unit: ${e}`);
     }
@@ -134,4 +140,5 @@ module.exports = {
     writeToRawData,
     getUnitInfo,
     getDriverInfo,
+    updateUnitState,
 }

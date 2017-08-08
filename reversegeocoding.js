@@ -64,7 +64,7 @@ function* getAddress(lat, lon){
 
 function* getNearestGeoreference(lat, lon, companyId) {
     if (companyId == "SIN-EMPRESA"){
-        return "N/A"
+        return {"name":"N/A", "distance":0}
     }
     let col = db.collection(georeferenceCol)
     let cursor = col.aggregate([
@@ -85,7 +85,7 @@ function* getNearestGeoreference(lat, lon, companyId) {
             "distance":results.dist.calculated
         }
     } else {
-        return "N/A"
+        return {"name":"N/A", "distance":0}
     }
 }
 

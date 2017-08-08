@@ -39,6 +39,8 @@ function getPotableMessage(decodedMessage) {
             potableMessage["latitude"] = decodedMessage["latitude"];
             potableMessage["longitude"] = decodedMessage["longitude"];
             potableMessage["speed"] = decodedMessage["speed"] * 0.036;
+            potableMessage["eventCode"] = decodedMessage["eventCode"];
+            potableMessage["heading"] = decodedMessage["heading"];
             potableMessage["odometer"] = getOdometer(decodedMessage);
             if (decodedMessage["accumList"].length >= 3){
                 if (decodedMessage["accumList"][2] !== 0){
