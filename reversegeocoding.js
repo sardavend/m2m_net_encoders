@@ -32,6 +32,9 @@ function* connect() {
  * @returns {object} 
  */
 function* getGeozone(lat, lon, companyId){
+    if (companyId == "SIN-EMPRESA"){
+        return {"name":"N/A"};
+    }
     let oid = new ObjectID(companyId);
     let col = db.collection(georeferenceCol);
     let queryIntersects = {"$geometry":{"type":"Point","coordinates":[lon, lat]}};
@@ -60,6 +63,9 @@ function* getAddress(lat, lon){
 }
 
 function* getNearestGeoreference(lat, lon, companyId) {
+    if (companyId == "SIN-EMPRESA"){
+        return "N/A"
+    }
     let col = db.collection(georeferenceCol)
     let cursor = col.aggregate([
        {"$geoNear":{
