@@ -55,12 +55,17 @@ function* getUnitInfo(unitId) {
     let col = db.collection(unitsCol)
     let result = yield col.findOne({"dispositivo_actual":unitId, "state":true})
     // let result = yield col.findOne({})
+    console.log(result);
     if (result !== null){
         return result;
     } 
     // throw new Error('unregistered unit');
     registerUnit(unitId)
-    .then(newUnit => newUnit);
+    .then(newUnit => {
+        console.log(newUnit);
+        console.log(`a new unit was registered ${newUnit}`);
+        return newUnit;
+    });
 }
 
 function getNewUnitObject(unitId){
@@ -101,6 +106,7 @@ function getNewUnitObject(unitId){
     }
 }
 function registerUnit(unitId) {
+    console.log(`registering new Unit ${unitId}`)
     return co(function* (){
         let col = db.collection(unitsCol)
         let newUnit = getNewUnitObject(unitId);
