@@ -60,7 +60,7 @@ function* getUnitInfo(unitId) {
         return result;
     } 
     // throw new Error('unregistered unit');
-    registerUnit(unitId)
+    return co(registerUnit(unitId))
     .then(newUnit => {
         console.log(newUnit);
         console.log(`a new unit was registered ${newUnit}`);
@@ -106,8 +106,8 @@ function getNewUnitObject(unitId){
     }
 }
 function registerUnit(unitId) {
-    console.log(`registering new Unit ${unitId}`)
     return co(function* (){
+        console.log(`registering new Unit ${unitId}`)
         let col = db.collection(unitsCol)
         let newUnit = getNewUnitObject(unitId);
         try{
