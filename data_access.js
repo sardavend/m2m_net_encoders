@@ -60,7 +60,7 @@ function* getUnitInfo(unitId) {
         return result;
     } 
     // throw new Error('unregistered unit');
-    registerUnit(unitId)
+    return registerUnit(unitId)
     .then(newUnit => {
         console.log(newUnit);
         console.log(`a new unit was registered ${newUnit}`);
