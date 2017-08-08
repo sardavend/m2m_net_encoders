@@ -66,7 +66,7 @@ function* getUnitInfo(unitId) {
         console.log(newUnit);
         console.log(`a new unit was registered ${newUnit}`);
         return newUnit;
-    });*/
+    });
 }
 
 function getNewUnitObject(unitId){
@@ -106,8 +106,9 @@ function getNewUnitObject(unitId){
         }
     }
 }
-function* registerUnit(unitId) {
-    console.log(`registering new Unit ${unitId}`)
+function registerUnit(unitId) {
+    return co(function* (){
+        console.log(`registering new Unit ${unitId}`)
         let col = db.collection(unitsCol)
         let newUnit = getNewUnitObject(unitId);
         try{
@@ -116,6 +117,7 @@ function* registerUnit(unitId) {
         } catch (e){
             console.log(`An error has ocurred when registering a new unit: ${e}`);
         }
+    })
 }
 
 function* getDriverInfo(driverId){
