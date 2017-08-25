@@ -11,6 +11,7 @@ const driverCol = 'driver';
 const dataUnitColl = 'unitDataLog';
 const rawDataCol = 'rawdata';
 const unitStateCol = 'unitState';
+const lastNCol = 'lastnpositions';
 
 
 var db;
@@ -41,8 +42,45 @@ function * writeToRawData(message){
 }
 
 function * updateUnitState(message){
+    message["currentState"]["updateTime"] = new Date(message["currentState"]["updateTime"]);
     let cond ={"_id":message["_id"]};
     yield update(unitStateCol, cond,  message);
+}
+// legacy function
+function * updateCurrentState(message){
+    //for legacy field, estado_actual
+    console.log(message["unitInstanceId"].toString())
+    let cond = {"_id":message["unitInstanceId"]};
+    let msg = {"$set":{"estado_actual":message}};
+    yield update(unitsCol, cond, msg);
+}
+
+function * updateLastnPositions(message){
+    let position = {
+        "date":message["updateTime"],
+        "speed":message["speed"],
+        "address":message["address"],
+        "geoReference":message["geoReference"],
+        "nearestGeoReference":message["nearestGeoReference"],
+        "latitude":message["latitude"],
+        "longitude":message["longitude"],
+        "eventName":message["eventCode"],
+        "heading":message["heading"],
+    }
+    let cond = {"_id":message["unitInstanceId"]};
+    let msg = {
+        "$push":{
+            "positions":{
+                "$each":[position],
+                "$position":0,
+                "$sort":{"date":-1},
+                "$slice":10
+            }
+        }
+    };
+    yield update(lastNCol, cond, msg);
+     
+
 }
 
 function writeToUnitStatus(message){
@@ -141,4 +179,6 @@ module.exports = {
     getUnitInfo,
     getDriverInfo,
     updateUnitState,
+    updateCurrentState,
+    updateLastnPositions,
 }

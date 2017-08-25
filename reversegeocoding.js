@@ -61,7 +61,7 @@ function* getAddress(lat, lon){
         return "N/A";
     }
 }
-
+const distanceMeters = 10000
 function* getNearestGeoreference(lat, lon, companyId) {
     if (companyId == "SIN-EMPRESA"){
         return {"name":"N/A", "distance":0}
@@ -71,7 +71,7 @@ function* getNearestGeoreference(lat, lon, companyId) {
        {"$geoNear":{
            "near":{"type":"Point", "coordinates":[lon,lat]},
            "distanceField":"dist.calculated",
-           "maxDistance":100000,
+           "maxDistance":distanceMeters,
            "query":{"properties.empresaId":new ObjectID(companyId),"properties.state":true},
            "includeLocs":"dist.location",
            "num":1,

@@ -23,6 +23,9 @@ function getOdometer(msg){
  * @param {object} decodedMessage 
  */
 function getPotableMessage(decodedMessage) {
+    if(decodedMessage["isDecoded"] != true){
+        throw new Error("You need to decoded the message first with decodedMessage function before calling this function");
+    }
     let potableMessage = {};
     let companyId;
     let driverKeyId;
@@ -84,7 +87,7 @@ function getPotableMessage(decodedMessage) {
             return co(reverseGeocoding.getGeozone(decodedMessage["latitude"], decodedMessage["longitude"], companyId));
         }).then(geoZone => {
             potableMessage["geoReference"]["geoZone"] = geoZone["name"];
-            return co(reverseGeocoding.getNearestGeoreference(decodedMessage["latitude"], decodedMessage["longitude"]));
+            return co(reverseGeocoding.getNearestGeoreference(decodedMessage["latitude"], decodedMessage["longitude"], companyId));
         }).then(nearest => {
             potableMessage["geoReference"]["nearest"] = nearest["name"];
             potableMessage["geoReference"]["distanceToNearest"] = nearest["distance"];
@@ -115,7 +118,7 @@ function getAccumList(offset, msg, accumCount){
 }
 
 /**
- * @param {Buffer} msg  A hex string msg
+ * @param {Buffer} msg  A binary msg
  * */
 function decodeMessage(msg){
         //check reference on ttps://puls.calamp.com/wiki/LM_Direct_Reference_Guide
@@ -156,6 +159,7 @@ function decodeMessage(msg){
     let accumType = decodedMessage["accums"] & accumTypeFlag;
     decodedMessage["append"] = msg.readInt8(offsetMC + 39);
     decodedMessage["accumList"] = getAccumList(offsetMC + 40, msg, accumCount);
+    decodedMessage["isDecoded"] = true;
 
     return decodedMessage;
 }
