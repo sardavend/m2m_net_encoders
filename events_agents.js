@@ -4,69 +4,59 @@ const co = require('co');
 const persistenceOpen = require('./data_access.js');
 // const persistenceOpen = require('./persistence.js').connect(url);
 const writeToRawData = require('./data_access.js').writeToRawData;
+const writeToEventMetric = require('./data_access.js').writeToEventMetric;
+const writeToEventMetricMontly = require('./data_access.js').writeToEventMetricMontly;
 const updateCurrentState = require('./data_access.js').updateCurrentState;
 const updateLastnPositions = require('./data_access.js').updateLastnPositions;
 // var all = require('bluebird').all
 const xchange = 'main_valve';
 
-/**
- * 
- * @param {string} uiid 
- * @param {Date} updateTime 
- */
+/*
 function getUnitStateId(uiid,updateTime){
     let deltaBo = new Date(updateTime - 14400000);
     return `${uiid}/${deltaBo.toISOString().split('T')[0]}`
-}
-/**
- * 
- * @param {*} uiid 
- * @param {*} updateTime 
- */
+}*/
+
 
 function getUnitStateDate(updateTime){
     let deltaBo = new Date(updateTime - 14400000);
     return new Date(deltaBo.getFullYear,deltaBo.getMonth, deltaBo.getDay)
-    // return `${uiid}/${deltaBo.toISOString().split('T')[0]}`
 }
 
+function generateWebNotification() {
 
-function getRawdata(msg) {
-    let unitState = {};
-    // unitState["_id"] = getUnitStateId(msg["unitInstanceId"], msg["updateTime"]);
-    // unitState["_id"] = getUnitStateId(msg["unitInstanceId"], msg["updateTime"]);
-    unitState["unitInstanceId"] = msg["unitInstanceId"];
-    unitState["unitId"] = msg["unitId"];
-    unitState["updateTime"] = new Date(msg["updateTime"]);
-    unitState["driverId"] = msg["driver"]["id"];
-    unitState["driverName"] = msg["driver"]["name"];
-    unitState["driverKeyId"] = msg["driver"]["keyId"];
-    unitState["latitude"] = msg["latitude"];
-    unitState["longitude"] = msg["longitude"];
-    unitState["speed"] = msg["speed"] / 0.036; //to cm/secs
-    unitState["heading"] = msg["heading"];
-    unitState["eventCode"] = msg["eventCode"];
-    unitState["address"] = msg["geoReference"]["address"];
-    unitState["geoReference"] = msg["geoReference"]["geoZone"];
-    unitState["nearestGeoReference"] = msg["geoReference"]["nearest"];
-    unitState["address"] = msg["geoReference"]["address"];
-    unitState["altitude"] = msg["altitude"];
-    /*
-    unitState["currentState"] = {
-        "driver":msg["driver"],
-        "geoReference": msg["geoReference"],
-        "heading": msg["heading"],
-        "eventCode": msg["eventCode"],
-        "altitude": msg["altitude"],
-        "latitude": msg["latitude"],
-        "longitude": msg["longitude"],
-        "speed": msg["speed"],
-        "updateTime":msg["updateTime"],
-        "odometer":msg["odometer"]
-    },
-    unitState["tripDistance"] = 0;*/
-    return unitState; 
+
 }
+
+function getEventHistoricData(msg) {
+	//function to work with legacy structures
+	let historicData = {
+		"velocidad": msg["speed"],
+		"referencia":msg["geoReference"]["nearest"],
+		"fecha":msg["updateTime"],
+		"latitude":msg["latitude"],
+		"longitude":msg["longitude"]
+	};
+	return historicData;
+}
+
+function getMetricQuery(unitInstanceId, eventId, date){
+	let query = {
+		"id_vehiculo":unitInstanceId,
+		"id_falta": eventId,
+		"date": date,
+	}
+	return query;
+}
+function getMetricQueryWeekMonth(unitInstanceId, eventId, year) {
+	let query = {
+		"id_vehiculo":unitInstanceId,
+		"id_falta":eventId, 
+		"year":year,
+	}
+	return query;
+}
+
 
 co(persistenceOpen.connect(url)).then(() =>{
     console.log("Connected to Mongodb")
@@ -96,10 +86,14 @@ co(persistenceOpen.connect(url)).then(() =>{
             let routingKey = msg.fields.routingKey;
             let content = msg.content.toString();
             let contentJson = JSON.parse(content);
-            let rawData= getRawdata(contentJson);
-            co(writeToRawData(rawData))
+	    let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], 
+		    				getUnitStateDate(contentJson["updateTime"]));
+
+            co(writeToEventMetric(metricQuery, getEventHistoricData(contentJson)));
             .then(() => {
-                return co(updateCurrentState(rawData));
+		let month = contentJson["updateTime"].getMonth() + 1;
+		let week = contentJson["updateTime"].
+                return co(writeToEventMetricMontly(contentJson["unitInstanceId"], ));
             }).then(() =>{
                 return co(updateLastnPositions(rawData));
             }).then(() => {

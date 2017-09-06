@@ -1,6 +1,7 @@
 const reverseGeocoding = require("../reversegeocoding.js");
 const getUnitInfo = require("../data_access.js").getUnitInfo;
 const getDriverInfo = require("../data_access.js").getDriverInfo;
+const getDriverInfo = require("../data_access.js").getEventInfo;
 const co = require('co');
 
 // const accumCountFlag = 0x3F;
@@ -95,8 +96,11 @@ function getPotableMessage(decodedMessage) {
         }).then(nearest => {
             potableMessage["geoReference"]["nearest"] = nearest["name"];
             potableMessage["geoReference"]["distanceToNearest"] = nearest["distance"];
+	    return co(getEventInfo(potableMessage["eventCode"], companyId);
+        }).then(eventId => { 
+	    potableMessage["eventId"]= eventId;
             resolve(potableMessage);
-        }).catch(err => {
+	}).catch(err => {
             reject(err);
         })
     }).catch(err => {

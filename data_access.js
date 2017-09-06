@@ -12,6 +12,9 @@ const dataUnitColl = 'unitDataLog';
 const rawDataCol = 'rawdata';
 const unitStateCol = 'unitState';
 const lastNCol = 'lastnpositions';
+const eventCol = 'falta';
+const dailyEventsCol = 'faltas.metricas.diarias';
+const weeklyYearlyEventsCol = 'faltas.metricas';
 
 
 var db;
@@ -27,6 +30,10 @@ function* update(coll,cond, updateObject){
     yield db.collection(coll).update(cond, updateObject,{"upsert":true});
 }
 
+function * write_web_notification(message) {
+	//legacy function to mantain current web notification working
+	yield save(notifcationColl, message);
+}
 
 function * writeToDataUnitLog(message){
     message["unitInstanceId"] = ObjectId(message["unitInstanceId"]);
@@ -39,6 +46,31 @@ function * writeToRawData(message){
     message["unitInstanceId"] = ObjectId(message["unitInstanceId"]);
     message["updateTime"] = new Date(message["updateTime"]);
     yield save(rawDataCol, message);
+}
+
+function* writeToEventMetric(queryObject, historicData){
+	queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
+	queryObject["id_falta"] = ObjectId(queryObject["id_falta"]);
+	let updateObject = {
+		"$inc":{"total":1},
+		"$push":{"historic":historicData}
+	}
+	yield update(dailyEventsCol, queryObject, updateObject)
+}
+
+function* writeToEventMetricMontly(queryObject, numWeek, month){
+	let weekString = `week.${numWeek}`;
+	let monthString = `month.${month}`;
+	queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
+	queryObject["id_falta"] = ObjectId(queryObject["id_falta"]);
+	let updateObject = {
+		"$inc":{
+			"total":1,
+			""+weekString+"":1,
+			""+monthString+"":1,
+		}
+	}
+	yield update(weeklyYearlyEventsCol, queryObject, updateObject);
 }
 
 function * updateUnitState(message){
@@ -89,6 +121,7 @@ function writeToUnitStatus(message){
         console.log(`Unit Status id is: ${unitStatusId}`);
     })
 }
+
 
 function* getUnitInfo(unitId) {
     let col = db.collection(unitsCol)
@@ -162,6 +195,17 @@ function* registerUnit(unitId) {
     }
 }
 
+function* getEventInfo(eventCode, companyId) {
+	eventCode = parseInt(eventCode);
+	let col = db.collection(eventCol);
+	let reuslt = yield col.findOne({"evento":eventCode, "id_empresa":companyId})
+	if (result !== null) {
+		return result
+	}
+	return 'unregistered';
+}
+
+
 function* getDriverInfo(driverId){
     let col = db.collection(driverCol);
     let result = yield col.findOne({"ibutton.code":driverId})
@@ -172,13 +216,16 @@ function* getDriverInfo(driverId){
 }
 
 
+
 module.exports = {
     connect,
     writeToDataUnitLog,
     writeToRawData,
+    writeToEventMetric,
     getUnitInfo,
     getDriverInfo,
     updateUnitState,
     updateCurrentState,
     updateLastnPositions,
+    getEventInfo,
 }
