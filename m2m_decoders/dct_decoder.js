@@ -1,7 +1,7 @@
 const reverseGeocoding = require("../reversegeocoding.js");
 const getUnitInfo = require("../data_access.js").getUnitInfo;
 const getDriverInfo = require("../data_access.js").getDriverInfo;
-const getDriverInfo = require("../data_access.js").getEventInfo;
+const getEventInfo = require("../data_access.js").getEventInfo;
 const co = require('co');
 
 // const accumCountFlag = 0x3F;
@@ -96,14 +96,16 @@ function getPotableMessage(decodedMessage) {
         }).then(nearest => {
             potableMessage["geoReference"]["nearest"] = nearest["name"];
             potableMessage["geoReference"]["distanceToNearest"] = nearest["distance"];
-	    return co(getEventInfo(potableMessage["eventCode"], companyId);
+	    return co(getEventInfo(potableMessage["eventCode"], companyId));
         }).then(eventInfo => {
 	    if(eventInfo !== 'unregistered'){
 	    	potableMessage["eventId"] = eventInfo["_id"];
-		potableMessage["eventName"] = eventInfo["nombre"];
+		    potableMessage["eventName"] = eventInfo["nombre"];
+            potableMessage["eventType"] = eventInfo["id_tipo"];
 	    } else {
-		potableMessage["eventId"] = eventInfo;
-		potableMessage["eventName"] = eventInfo;
+            potableMessage["eventId"] = eventInfo;
+            potableMessage["eventName"] = eventInfo;
+            potableMessage["eventType"] = eventInfo;
 	    }
             resolve(potableMessage);
 	}).catch(err => {

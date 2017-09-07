@@ -33,6 +33,7 @@ function* update(coll,cond, updateObject){
 
 function * writeWebNotification(message) {
 	//legacy function to mantain current web notification working
+    message["unit_id"] = ObjectId(message["unit_id"]);
 	yield save(notifcationColl, message);
 }
 
@@ -70,13 +71,12 @@ function* writeToEventMetricMontly(queryObject, numWeek, month){
 	let monthString = `month.${month}`;
 	queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
 	queryObject["id_falta"] = ObjectId(queryObject["id_falta"]);
-	let updateObject = {
-		"$inc":{
-			"total":1,
-			""+weekString+"":1,
-			""+monthString+"":1,
-		}
-	}
+    updateObject = {};
+    updateObject["$inc"] = {};
+    updateObject["$inc"][`${weekString}`] = 1,
+    updateObject["$inc"][`${monthString}`] = 1,
+    updateObject["$inc"]['total'] = 1
+
 	yield update(weeklyYearlyEventsCol, queryObject, updateObject);
 }
 
@@ -205,10 +205,13 @@ function* registerUnit(unitId) {
 function* getEventInfo(eventCode, companyId) {
 	eventCode = parseInt(eventCode);
 	let col = db.collection(eventCol);
-	let reuslt = yield col.findOne({"evento":eventCode, "id_empresa":companyId})
+	let result = yield col.findOne({"evento":eventCode, "id_empresa":companyId})
 	if (result !== null) {
+        console.log('Registered event found')
+        console.log(result);
 		return result
 	}
+    console.log(`uregisted event ${eventCode}`);
 	return 'unregistered';
 }
 
@@ -229,6 +232,8 @@ module.exports = {
     writeToDataUnitLog,
     writeToRawData,
     writeToEventMetric,
+    writeToEventMetricMontly,
+    writeWebNotification,
     getUnitInfo,
     getDriverInfo,
     updateUnitState,

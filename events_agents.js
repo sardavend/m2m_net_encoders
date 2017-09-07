@@ -7,6 +7,7 @@ const persistenceOpen = require('./data_access.js');
 const writeToRawData = require('./data_access.js').writeToRawData;
 const writeToEventMetric = require('./data_access.js').writeToEventMetric;
 const writeToEventMetricMontly = require('./data_access.js').writeToEventMetricMontly;
+const writeWebNotification = require('./data_access.js').writeWebNotification;
 const updateCurrentState = require('./data_access.js').updateCurrentState;
 const updateLastnPositions = require('./data_access.js').updateLastnPositions;
 // var all = require('bluebird').all
@@ -21,7 +22,10 @@ function getUnitStateId(uiid,updateTime){
 
 function getUnitStateDate(updateTime){
     let deltaBo = new Date(updateTime - 14400000);
-    return new Date(deltaBo.getFullYear,deltaBo.getMonth, deltaBo.getDay)
+    //let deltaBo = new Date(updateTime);
+
+    //return new Date(deltaBo.getFullYear(),deltaBo.getMonth() + 1, deltaBo.getDate());
+    return new Date(Date.UTC(deltaBo.getFullYear(),deltaBo.getMonth(), deltaBo.getDate(),0,0,0));
 }
 
 function generateWebNotification() {
@@ -34,36 +38,38 @@ function getEventHistoricData(msg) {
 	let historicData = {
 		"velocidad": msg["speed"],
 		"referencia":msg["geoReference"]["nearest"],
-		"fecha":msg["updateTime"],
+		"fecha":new Date(msg["updateTime"] - 14400000),
 		"latitude":msg["latitude"],
 		"longitude":msg["longitude"]
 	};
 	return historicData;
 }
 
-function getMetricQuery(unitInstanceId, eventId, date){
+function getMetricQuery(unitInstanceId, eventId, eventType, date){
 	let query = {
 		"id_vehiculo":unitInstanceId,
 		"id_falta": eventId,
+		"id_tipo": eventType,
 		"date": date,
 	}
 	return query;
 }
-function getMetricQueryWeekMonth(unitInstanceId, eventId, year) {
+function getMetricQueryWeekMonth(unitInstanceId, eventId, eventType, year) {
 	let query = {
 		"id_vehiculo":unitInstanceId,
 		"id_falta":eventId, 
 		"year":year,
+		"id_tipo":eventType,
 	}
 	return query;
 }
 
 function getNotificationObject(msg) {
 	let notiObject = {
-		"unit_id":ObjectId(msg["unitInstanceId"]),
-		"description":ObjectId(msg["eventName"]),
-		"datetime": moment(msg["updateTime"]),
-		"positionn:{
+		"unit_id":msg["unitInstanceId"],
+		"description":msg["eventName"],
+		"datetime": new Date(msg["updateTime"]),
+		"position":{
 			"latitude": parseFloat(msg["latitude"]),
 			"longitude": parseFloat(msg["longitude"])
 		},
@@ -101,27 +107,27 @@ co(persistenceOpen.connect(url)).then(() =>{
             let routingKey = msg.fields.routingKey;
             let content = msg.content.toString();
             let contentJson = JSON.parse(content);
-	    let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], 
-		    				getUnitStateDate(contentJson["updateTime"]));
+			let uT = getUnitStateDate(contentJson["updateTime"]);
+	    let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], contentJson["eventType"],uT);
 
-            co(writeToEventMetric(metricQuery, getEventHistoricData(contentJson)));
-            .then(() => {
-		let dateTime = moment(contentJson["updateTime"]);
-		let month = dateTime.format('M');
-		let week = dateTime.format('W');
-		let query = getMetricQueryWeekMonth(contentJson["unitInstanceId"],contentJson["eventId"],
-							parseInt(dateTime.format('YYYY')))
-                return co(writeToEventMetricMontly(query, week, month));
-            }).then(() => {
-		let notifObject = getNotificationObject(contentJson); 
-		return co(writeWebNotification(notifObject));
-            }).then(() => {
-                console.log(` [x] ${routingKey}:${contentJson}`)
-                ch.ack(msg);
+        co(writeToEventMetric(metricQuery, getEventHistoricData(contentJson)))
+			.then(() => {
+			let dateTime = moment(contentJson["updateTime"]);
+			let month = dateTime.format('M');
+			let week = dateTime.format('W');
+			let query = getMetricQueryWeekMonth(contentJson["unitInstanceId"],contentJson["eventId"],contentJson["eventType"],
+								parseInt(dateTime.format('YYYY')));
+			return co(writeToEventMetricMontly(query, week, month));
+			}).then(() => {
+				let notifObject = getNotificationObject(contentJson); 
+				return co(writeWebNotification(notifObject));
+			}).then(() => {
+				console.log(` [x] ${routingKey}:${contentJson}`)
+				ch.ack(msg);
 
-	    }).catch(err =>{
-                console.log(`An error has ocurred processing the message ${err}`);
-            });
+			}).catch(err =>{
+				console.log(`An error has ocurred processing the message ${err}`);
+			});
 
         }
     }).catch(console.warn);
