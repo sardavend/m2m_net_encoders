@@ -15,6 +15,7 @@ const lastNCol = 'lastnpositions';
 const eventCol = 'falta';
 const dailyEventsCol = 'faltas.metricas.diarias';
 const weeklyYearlyEventsCol = 'faltas.metricas';
+const notifcationColl = 'notification';
 
 
 var db;
@@ -30,7 +31,7 @@ function* update(coll,cond, updateObject){
     yield db.collection(coll).update(cond, updateObject,{"upsert":true});
 }
 
-function * write_web_notification(message) {
+function * writeWebNotification(message) {
 	//legacy function to mantain current web notification working
 	yield save(notifcationColl, message);
 }
@@ -49,6 +50,9 @@ function * writeToRawData(message){
 }
 
 function* writeToEventMetric(queryObject, historicData){
+	if (queryObject["id_falta"] === 'unregistered'){
+		return 
+	}
 	queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
 	queryObject["id_falta"] = ObjectId(queryObject["id_falta"]);
 	let updateObject = {
@@ -59,6 +63,9 @@ function* writeToEventMetric(queryObject, historicData){
 }
 
 function* writeToEventMetricMontly(queryObject, numWeek, month){
+	if (queryObject["id_falta"] === 'unregistered'){
+		return 
+	}
 	let weekString = `week.${numWeek}`;
 	let monthString = `month.${month}`;
 	queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);

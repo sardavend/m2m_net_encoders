@@ -1,6 +1,7 @@
 const amqpOpen = require('amqplib').connect('amqp://imonnetplus.com.bo');
 const url = 'mongodb://imonnetplus.com.bo:27017/platform2';
 const co = require('co');
+const moment = require('moment');
 const persistenceOpen = require('./data_access.js');
 // const persistenceOpen = require('./persistence.js').connect(url);
 const writeToRawData = require('./data_access.js').writeToRawData;
@@ -57,6 +58,20 @@ function getMetricQueryWeekMonth(unitInstanceId, eventId, year) {
 	return query;
 }
 
+function getNotificationObject(msg) {
+	let notiObject = {
+		"unit_id":ObjectId(msg["unitInstanceId"]),
+		"description":ObjectId(msg["eventName"]),
+		"datetime": moment(msg["updateTime"]),
+		"positionn:{
+			"latitude": parseFloat(msg["latitude"]),
+			"longitude": parseFloat(msg["longitude"])
+		},
+		"read":[]
+	}
+	return notiObject;
+}
+
 
 co(persistenceOpen.connect(url)).then(() =>{
     console.log("Connected to Mongodb")
@@ -91,17 +106,20 @@ co(persistenceOpen.connect(url)).then(() =>{
 
             co(writeToEventMetric(metricQuery, getEventHistoricData(contentJson)));
             .then(() => {
-		let month = contentJson["updateTime"].getMonth() + 1;
-		let week = contentJson["updateTime"].
-                return co(writeToEventMetricMontly(contentJson["unitInstanceId"], ));
-            }).then(() =>{
-                return co(updateLastnPositions(rawData));
+		let dateTime = moment(contentJson["updateTime"]);
+		let month = dateTime.format('M');
+		let week = dateTime.format('W');
+		let query = getMetricQueryWeekMonth(contentJson["unitInstanceId"],contentJson["eventId"],
+							parseInt(dateTime.format('YYYY')))
+                return co(writeToEventMetricMontly(query, week, month));
             }).then(() => {
-            
+		let notifObject = getNotificationObject(contentJson); 
+		return co(writeWebNotification(notifObject));
+            }).then(() => {
                 console.log(` [x] ${routingKey}:${contentJson}`)
                 ch.ack(msg);
-            }).catch(err =>{
 
+	    }).catch(err =>{
                 console.log(`An error has ocurred processing the message ${err}`);
             });
 

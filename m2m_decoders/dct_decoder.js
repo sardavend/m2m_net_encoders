@@ -97,8 +97,14 @@ function getPotableMessage(decodedMessage) {
             potableMessage["geoReference"]["nearest"] = nearest["name"];
             potableMessage["geoReference"]["distanceToNearest"] = nearest["distance"];
 	    return co(getEventInfo(potableMessage["eventCode"], companyId);
-        }).then(eventId => { 
-	    potableMessage["eventId"]= eventId;
+        }).then(eventInfo => {
+	    if(eventInfo !== 'unregistered'){
+	    	potableMessage["eventId"] = eventInfo["_id"];
+		potableMessage["eventName"] = eventInfo["nombre"];
+	    } else {
+		potableMessage["eventId"] = eventInfo;
+		potableMessage["eventName"] = eventInfo;
+	    }
             resolve(potableMessage);
 	}).catch(err => {
             reject(err);
