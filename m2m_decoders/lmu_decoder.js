@@ -1,6 +1,7 @@
 const reverseGeocoding = require("../reversegeocoding.js");
 const getUnitInfo = require("../data_access.js").getUnitInfo;
 const getDriverInfo = require("../data_access.js").getDriverInfo;
+const getEventInfo = require("../data_access.js").getEventInfo;
 const co = require('co');
 
 const accumCountFlag = 0x3F;
@@ -91,6 +92,18 @@ function getPotableMessage(decodedMessage) {
         }).then(nearest => {
             potableMessage["geoReference"]["nearest"] = nearest["name"];
             potableMessage["geoReference"]["distanceToNearest"] = nearest["distance"];
+            return co(getEventInfo(decodedMessage["eventCode"], companyId))
+        }).then(eventInfo => {
+            if(eventInfo !== 'unregistered'){
+                potableMessage["eventId"] = eventInfo["_id"];
+                potableMessage["eventName"] = eventInfo["nombre"];
+                potableMessage["eventType"] = eventInfo["id_tipo"];
+            } else {
+            potableMessage["eventId"] = eventInfo;
+            potableMessage["eventName"] = eventInfo;
+            potableMessage["eventType"] = eventInfo;
+            }
+
             resolve(potableMessage);
         }).catch(err => {
             reject(err);
@@ -112,7 +125,8 @@ function getAccumList(offset, msg, accumCount){
     let i;
     let accumList = []
     for (i = 0; i < accumCount;i++){
-        accumList.push(msg.readInt32BE(i*4));
+        //accumList.push(msg.readInt32BE(i*4));
+        accumList.push(msg.readUInt32BE(i*4));
     }
     return accumList;
 }

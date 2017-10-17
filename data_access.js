@@ -54,7 +54,14 @@ function* writeToEventMetric(queryObject, historicData){
 	if (queryObject["id_falta"] === 'unregistered'){
 		return 
 	}
-	queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
+    /*
+    if ("id_vehiculo" in queryObject){
+	    queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
+    } else {
+        queryObject["id_conductor"] = ObjectId(queryObject["id_conductor"]);
+    }*/
+
+    queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
 	queryObject["id_falta"] = ObjectId(queryObject["id_falta"]);
 	let updateObject = {
 		"$inc":{"total":1},
@@ -69,7 +76,14 @@ function* writeToEventMetricMontly(queryObject, numWeek, month){
 	}
 	let weekString = `week.${numWeek}`;
 	let monthString = `month.${month}`;
-	queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
+    /*
+    if ("id_vehiculo" in queryObject){
+        queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
+    } else {
+        queryObject["id_conductor"] = ObjectId(queryObject["id_conductor"]);
+    }*/
+    
+    queryObject["id_vehiculo"] = ObjectId(queryObject["id_vehiculo"]);
 	queryObject["id_falta"] = ObjectId(queryObject["id_falta"]);
     updateObject = {};
     updateObject["$inc"] = {};

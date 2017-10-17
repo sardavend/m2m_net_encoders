@@ -7,7 +7,7 @@ const co = require('co');
 const lmuDecoder= require('./m2m_decoders/lmu_decoder');
 const reverseGeocoding = require('./reversegeocoding.js');
 const dataAccessConnect = require('./data_access.js');
-const port = 8006;
+const port = 1996;
 const xchange= 'main_valve';
 
 const url = 'mongodb://imonnetplus.com.bo:27017/platform2';
@@ -73,6 +73,7 @@ function LMU_Server(chan){
         co(lmuDecoder.getPotableMessage(decodedMessage))
         .then(pMess => {
             console.log(`Potable Message is: ${pMess}`);
+            console.log(`Potable Message is: ${pMess["driver"]["keyId"]}`);
 		    chan.publish(xchange, '', new Buffer(JSON.stringify(pMess)));
             server.send(ackMessage,rinfo.port, rinfo.address); //ack
 

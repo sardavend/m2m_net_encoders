@@ -54,6 +54,16 @@ function getMetricQuery(unitInstanceId, eventId, eventType, date){
 	}
 	return query;
 }
+
+function getMetricQueryDriver(driverInstanceId, eventId, eventType, date){
+	let query = {
+		"id_conductor":driverInstanceId,
+		"id_falta": eventId,
+		"id_tipo": eventType,
+		"date": date,
+	}
+	return query;
+}
 function getMetricQueryWeekMonth(unitInstanceId, eventId, eventType, year) {
 	let query = {
 		"id_vehiculo":unitInstanceId,
@@ -64,7 +74,24 @@ function getMetricQueryWeekMonth(unitInstanceId, eventId, eventType, year) {
 	return query;
 }
 
+
+function getMetricQueryWeekMonthDriver(driverInstanceId, eventId, eventType, year) {
+	let query = {
+		"id_conductor":driverInstanceId,
+		"id_falta":eventId, 
+		"year":year,
+		"id_tipo":eventType,
+	}
+	return query;
+}
+
+
 function getNotificationObject(msg) {
+	if(msg["eventName"] === 'unregistered'){
+		msg["eventName"] = msg["eventName"] + " / " + msg["eventCode"];
+		console.log(msg["eventName"]);
+		return 
+	}
 	let notiObject = {
 		"unit_id":msg["unitInstanceId"],
 		"description":msg["eventName"],
@@ -109,6 +136,20 @@ co(persistenceOpen.connect(url)).then(() =>{
             let contentJson = JSON.parse(content);
 			let uT = getUnitStateDate(contentJson["updateTime"]);
 	    let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], contentJson["eventType"],uT);
+		if(contentJson["driver"]["id"] !== "N/A"){
+			//let metricQueryDriver = getMetricQueryDriver(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
+			let metricQueryDriver = getMetricQuery(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
+			co(writeToEventMetric(metricQueryDriver, getEventHistoricData(contentJson)))
+			.then(() => {
+				let dateTime = moment(contentJson["updateTime"]);
+				let month = dateTime.format('M');
+				let week = dateTime.format('W');
+				//let query = getMetricQueryWeekMonthDriver(contentJson["driver"]["id"],contentJson["eventId"],contentJson["eventType"],
+				let query = getMetricQueryWeekMonth(contentJson["driver"]["id"],contentJson["eventId"],contentJson["eventType"],
+									parseInt(dateTime.format('YYYY')));
+				return co(writeToEventMetricMontly(query, week, month));
+			})
+		}
 
         co(writeToEventMetric(metricQuery, getEventHistoricData(contentJson)))
 			.then(() => {
@@ -120,7 +161,10 @@ co(persistenceOpen.connect(url)).then(() =>{
 			return co(writeToEventMetricMontly(query, week, month));
 			}).then(() => {
 				let notifObject = getNotificationObject(contentJson); 
-				return co(writeWebNotification(notifObject));
+				if (notifObject !== undefined){
+					return co(writeWebNotification(notifObject));
+				}
+				return 
 			}).then(() => {
 				console.log(` [x] ${routingKey}:${contentJson}`)
 				ch.ack(msg);
