@@ -135,45 +135,55 @@ co(persistenceOpen.connect(url)).then(() =>{
             let content = msg.content.toString();
             let contentJson = JSON.parse(content);
 			let uT = getUnitStateDate(contentJson["updateTime"]);
-	    let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], contentJson["eventType"],uT);
-		if(contentJson["driver"]["id"] !== "N/A"){
-			//let metricQueryDriver = getMetricQueryDriver(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
-			let metricQueryDriver = getMetricQuery(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
-			co(writeToEventMetric(metricQueryDriver, getEventHistoricData(contentJson)))
-			.then(() => {
+			let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], contentJson["eventType"],uT);
+			if(contentJson["driver"]["id"] !== "N/A"){
+				//let metricQueryDriver = getMetricQueryDriver(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
+				console.log(contentJson["driver"]["id"])
+				console.log(contentJson["driver"]["name"])
+				let metricQueryDriver = getMetricQuery(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
+				co(writeToEventMetric(metricQueryDriver, getEventHistoricData(contentJson)))
+				.then(() => {
+					let dateTime = moment(contentJson["updateTime"]);
+					let month = dateTime.format('M');
+					let week = dateTime.format('W');
+					//let query = getMetricQueryWeekMonthDriver(contentJson["driver"]["id"],contentJson["eventId"],contentJson["eventType"],
+					let query = getMetricQueryWeekMonth(contentJson["driver"]["id"],contentJson["eventId"],contentJson["eventType"],
+										parseInt(dateTime.format('YYYY')));
+					return co(writeToEventMetricMontly(query, week, month));
+				}).then(() =>{
+					console.log(` [x] ${routingKey}:${contentJson}`)
+					ch.ack(msg);
+
+				}).catch(err =>{
+					console.log(`An error has ocurred processing the message ${err}`);
+				});
+
+			}
+
+			co(writeToEventMetric(metricQuery, getEventHistoricData(contentJson)))
+				.then(() => {
 				let dateTime = moment(contentJson["updateTime"]);
 				let month = dateTime.format('M');
 				let week = dateTime.format('W');
-				//let query = getMetricQueryWeekMonthDriver(contentJson["driver"]["id"],contentJson["eventId"],contentJson["eventType"],
-				let query = getMetricQueryWeekMonth(contentJson["driver"]["id"],contentJson["eventId"],contentJson["eventType"],
+				let query = getMetricQueryWeekMonth(contentJson["unitInstanceId"],contentJson["eventId"],contentJson["eventType"],
 									parseInt(dateTime.format('YYYY')));
 				return co(writeToEventMetricMontly(query, week, month));
-			})
-		}
+				}).then(() => {
+					let notifObject = getNotificationObject(contentJson); 
+					if (notifObject !== undefined){
+						return co(writeWebNotification(notifObject));
+					}
+					return 
+				}).then(() => {
+					console.log(` [x] ${routingKey}:${contentJson}`)
+					ch.ack(msg);
 
-        co(writeToEventMetric(metricQuery, getEventHistoricData(contentJson)))
-			.then(() => {
-			let dateTime = moment(contentJson["updateTime"]);
-			let month = dateTime.format('M');
-			let week = dateTime.format('W');
-			let query = getMetricQueryWeekMonth(contentJson["unitInstanceId"],contentJson["eventId"],contentJson["eventType"],
-								parseInt(dateTime.format('YYYY')));
-			return co(writeToEventMetricMontly(query, week, month));
-			}).then(() => {
-				let notifObject = getNotificationObject(contentJson); 
-				if (notifObject !== undefined){
-					return co(writeWebNotification(notifObject));
-				}
-				return 
-			}).then(() => {
-				console.log(` [x] ${routingKey}:${contentJson}`)
-				ch.ack(msg);
-
-			}).catch(err =>{
-				console.log(`An error has ocurred processing the message ${err}`);
-			});
+				}).catch(err =>{
+					console.log(`An error has ocurred processing the message ${err}`);
+				});
 
         }
+
     }).catch(console.warn);
    
-})
+}).catch(console.warn);

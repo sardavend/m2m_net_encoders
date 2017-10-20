@@ -232,7 +232,7 @@ function* getEventInfo(eventCode, companyId) {
 
 function* getDriverInfo(driverId){
     let col = db.collection(driverCol);
-    let result = yield col.findOne({"ibutton.code":driverId})
+    let result = yield col.findOne({"ibutton.code":driverId,"state":true})
     if (result !== null){
         return result;
     }
