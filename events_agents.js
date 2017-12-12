@@ -116,12 +116,12 @@ co(persistenceOpen.connect(url)).then(() =>{
     }).then(ch => {
         var ok = ch.assertExchange(xchange, 'fanout',{durable:false});
         ok = ok.then(() => {
-            return ch.assertQueue('rawdata_log', {exclusive:false})
+            return ch.assertQueue('event_log', {exclusive:false})
         });
 
         ok = ok.then(qok => {
             let queue = qok.queue;
-            return ch.bindQueue(queue,xchange, 'raw_log').then(() => queue)
+            return ch.bindQueue(queue,xchange, 'ev_log').then(() => queue)
         });
         ok = ok.then(queue => {
             return ch.consume(queue, logMessage, {noAck:false});
@@ -152,7 +152,7 @@ co(persistenceOpen.connect(url)).then(() =>{
 					return co(writeToEventMetricMontly(query, week, month));
 				}).then(() =>{
 					console.log(` [x] ${routingKey}:${contentJson}`)
-					ch.ack(msg);
+					//ch.ack(msg);
 
 				}).catch(err =>{
 					console.log(`An error has ocurred processing the message ${err}`);
@@ -170,10 +170,7 @@ co(persistenceOpen.connect(url)).then(() =>{
 				return co(writeToEventMetricMontly(query, week, month));
 				}).then(() => {
 					let notifObject = getNotificationObject(contentJson); 
-					if (notifObject !== undefined){
-						return co(writeWebNotification(notifObject));
-					}
-					return 
+					return co(writeWebNotification(notifObject));
 				}).then(() => {
 					console.log(` [x] ${routingKey}:${contentJson}`)
 					ch.ack(msg);

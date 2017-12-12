@@ -16,6 +16,7 @@ const eventCol = 'falta';
 const dailyEventsCol = 'faltas.metricas.diarias';
 const weeklyYearlyEventsCol = 'faltas.metricas';
 const notifcationColl = 'notification';
+const settingsCol = 'settings';
 
 
 var db;
@@ -33,6 +34,9 @@ function* update(coll,cond, updateObject){
 
 function * writeWebNotification(message) {
 	//legacy function to mantain current web notification working
+    if (message  == undefined){
+        return
+    }
     message["unit_id"] = ObjectId(message["unit_id"]);
 	yield save(notifcationColl, message);
 }
@@ -167,6 +171,15 @@ function* getUnitInfo(unitId) {
     
 }
 
+function* getUnitSetting(unitSetting) {
+    if (unitSetting == null) {
+        return null;
+    }
+    let col = db.collection(settingsCol);
+    let result = yield col.findOne({"_id":ObjectId(unitSetting)});
+    return result;
+}
+
 function getNewUnitObject(unitId){
     return {
         "id_grupo" : null,
@@ -250,6 +263,7 @@ module.exports = {
     writeWebNotification,
     getUnitInfo,
     getDriverInfo,
+    getUnitSetting,
     updateUnitState,
     updateCurrentState,
     updateLastnPositions,

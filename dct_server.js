@@ -62,9 +62,14 @@ function DCTServer(chan){
             winston.log(`Client disconnected: ${client.name}`);
         });
         client.on('data', (data) => {
-            console.log('command recieved');
-            let {unitId, command} = JSON.parse(data);
-            sendTelecommand(unitId, command)
+            try {
+             console.log('command recieved');
+             let {unitId, command} = JSON.parse(data);
+             sendTelecommand(unitId, command)
+            } catch (error) {
+                console.log(error);
+                
+            }
         });
     })
 
@@ -85,7 +90,7 @@ function DCTServer(chan){
     server.on('message',(msg, rinfo) => {
         //let deviceInfo = `${rinfo.address}:${rinfo.port}`;
         winston.log(msg);
-        console.log(msg);
+        console.log(msg.toString('ascii'));
         server.send(msg, rastracPort, rastracIp);
         let stringMsg = msg.toString('ascii');
         let decodedMessage= decoder.decodeMessage(stringMsg);
@@ -116,9 +121,9 @@ function DCTServer(chan){
         });
         // msg = msg.toString('hex');
         msg +='@';
-        // msg = msg.toUpperCase();
+        msg = msg.toUpperCase();
         winston.log('debug', msg);
-        //broadcast(msg);
+        broadcast(msg);
     })
 
     server.on('close', () => {

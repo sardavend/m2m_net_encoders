@@ -2,6 +2,8 @@ const reverseGeocoding = require("../reversegeocoding.js");
 const getUnitInfo = require("../data_access.js").getUnitInfo;
 const getDriverInfo = require("../data_access.js").getDriverInfo;
 const getEventInfo = require("../data_access.js").getEventInfo;
+const getUnitSetting = require('../data_access.js').getUnitSetting;
+const utils = require('../utils.js');
 const co = require('co');
 
 // const accumCountFlag = 0x3F;
@@ -40,7 +42,7 @@ function getPotableMessage(decodedMessage) {
             potableMessage["unitId"] = unitInfo["dispositivo_actual"];
             potableMessage["plate"] = unitInfo["descripcion"];
             potableMessage["updateTime"] = getUpdateTime(decodedMessage);
-           potableMessage["altitude"] = 0;
+            potableMessage["altitude"] = 0;
             potableMessage["latitude"] = getCoordinate(decodedMessage["latitudeDegree"], decodedMessage["latitudeDecimal"]);
             potableMessage["longitude"] = getCoordinate(decodedMessage["longitudeDegree"], decodedMessage["longitudeDecimal"]);
             potableMessage["speed"] = parseFloat(decodedMessage["speed"]) * 1.6; //mph to kmh
@@ -50,22 +52,9 @@ function getPotableMessage(decodedMessage) {
             if (decodedMessage["ibutton"] !== 0){
                 return co(getDriverInfo(decodedMessage["ibutton"]));
             }
-            // if (decodedMessage["accumList"].length >= 3){
-            //     if (decodedMessage["accumList"][2] !== 0){
-            //         //when the unit is On the driver id comes at index 2 and must be not equal to zero
-            //         driverKeyId = (decodedMessage["accumList"][2]).toString('16').toUpperCase();
-            //         return co(getDriverInfo(driverKeyId))
-            //     } else if(decodedMessage["accumList"][3] !== 0){
-            //         //when the unit turned OFF , driver id comes at index 3 and index 2 becomes 0
-            //         //this data is actually the last know driver or the last identified driver
-            //         driverKeyId = (decodedMessage["accumList"][3]).toString('16').toUpperCase();
-            //         return co(getDriverInfo(driverKeyId))
-            //         // driverKeyId += "*";
-            //     }
-            // }
             //there is no driver info in the message (N/A)
             return new Promise((resolve, reject) => {
-                resolve(null)
+                resolve(null);
             })
 
         }).then(driverInfo => {
@@ -106,8 +95,16 @@ function getPotableMessage(decodedMessage) {
             potableMessage["eventId"] = eventInfo;
             potableMessage["eventName"] = eventInfo;
             potableMessage["eventType"] = eventInfo;
-	    }
-            resolve(potableMessage);
+        }/*
+        return co(getUnitSetting(unitInfo["settings"]));
+    }).then(unitSetting => {
+        potableMessage["settings"] = {};
+        potableMessage["settings"]["unitDelayedTime"] = unitSetting["unitDelayedTime"];
+        potableMessage["settings"]["minSpeed"] = unitSetting["minSpeed"];
+        potableMessage["isMoving"] = isMoving(unitSetting["minSpeed"], potableMessage["speed"]);
+        potableMessage["stoppedSince"] = setInitStopTime(potableMessage["isMoving"], unitInfo["estado_actual"]["stoppedSince"], potableMessage["updateTime"])*/
+
+        resolve(potableMessage);
 	}).catch(err => {
             reject(err);
         })
@@ -165,7 +162,7 @@ function getInputsOutputs(ioData){
 
 function getIbutton(ibData) {
         let ib = ibData.split('=');
-        return {"ibutton": ib};
+        return {"ibutton": ib[1]};
 }
 
 /**
@@ -175,22 +172,25 @@ function getIbutton(ibData) {
 
 function getExtendedMessage(messageParts) {
     let extendedData = {};
+    console.log(messageParts.entries().toString());
     let extendedParts = Array.from(messageParts
                                     .entries())
                                     .filter(e => e[0] != 0 && e[0] != messageParts.length - 1)
                                     .map(exEv => {
-                                        switch (exEv.substring(0,3)) {
+                                        let extendedEvent = exEv[1]
+                                        console.log(extendedEvent);
+                                        switch (extendedEvent.substring(0,2)) {
                                             case 'EA':
-                                                Object.assign(extendedData, getTemperature(exEv));
+                                                Object.assign(extendedData, getTemperature(extendedEvent));
                                                 break;
                                             case 'VO':
-                                                 Object.assign(extendedData, getVirtualOdometer(exEv));
+                                                 Object.assign(extendedData, getVirtualOdometer(extendedEvent));
                                                 break;
                                             case 'IO':
-                                                Object.assign(extendedData, getInputsOutputs(exEv));
+                                                Object.assign(extendedData, getInputsOutputs(extendedEvent));
                                                 break;
                                             case 'IB':
-                                                Object.assign(extendedData, getIbutton(exEv));
+                                                Object.assign(extendedData, getIbutton(extendedEvent));
                                                 break;
                                             }
                                     });
@@ -279,6 +279,7 @@ function decodeMessage(msg){
     decodedMessage = Object.assign(extendedParts, getEventPart(messageParts));
     decodedMessage["unitId"] = deviceId;
     decodedMessage["isDecoded"] = true;
+    
 
     return decodedMessage;
 }

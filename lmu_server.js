@@ -47,6 +47,17 @@ function LMU_Server(chan){
         client.on('end',() => {
             winston.log(`Client disconnected: ${client.name}`);
         });
+        client.on('data', (data) => {
+            try {
+             console.log('command recieved');
+             let {unitId, command} = JSON.parse(data);
+             sendTelecommand(unitId, command)
+            } catch (error) {
+                console.log(error);
+                
+            }
+        });
+
 
 
     })

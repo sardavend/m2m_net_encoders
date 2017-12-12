@@ -42,7 +42,7 @@ function getPotableMessage(decodedMessage) {
             potableMessage["altitude"] = decodedMessage["altitude"];
             potableMessage["latitude"] = decodedMessage["latitude"];
             potableMessage["longitude"] = decodedMessage["longitude"];
-            potableMessage["speed"] = decodedMessage["speed"] * 0.036;
+            potableMessage["speed"] = decodedMessage["speed"] * 0.036; //to km/h
             potableMessage["eventCode"] = decodedMessage["eventCode"];
             potableMessage["heading"] = decodedMessage["heading"];
             potableMessage["odometer"] = getOdometer(decodedMessage);
