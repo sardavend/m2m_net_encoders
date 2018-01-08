@@ -125,10 +125,14 @@ co(persistenceOpen.connect(url)).then(() =>{
         });
         ok = ok.then(queue => {
             return ch.consume(queue, logMessage, {noAck:false});
-        });
+		});
+
         return ok.then(() => {
+
             console.log('[*] Waiting for logs, To exit press CTRL+C');
-        });
+		});
+
+		
 
         function logMessage(msg){
             let routingKey = msg.fields.routingKey;
@@ -138,8 +142,8 @@ co(persistenceOpen.connect(url)).then(() =>{
 			let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], contentJson["eventType"],uT);
 			if(contentJson["driver"]["id"] !== "N/A"){
 				//let metricQueryDriver = getMetricQueryDriver(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
-				console.log(contentJson["driver"]["id"])
-				console.log(contentJson["driver"]["name"])
+				//console.log(contentJson["driver"]["id"])
+				//console.log(contentJson["driver"]["name"])
 				let metricQueryDriver = getMetricQuery(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
 				co(writeToEventMetric(metricQueryDriver, getEventHistoricData(contentJson)))
 				.then(() => {
