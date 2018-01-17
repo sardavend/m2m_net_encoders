@@ -17,6 +17,7 @@ const dailyEventsCol = 'faltas.metricas.diarias';
 const weeklyYearlyEventsCol = 'faltas.metricas';
 const notifcationColl = 'notification';
 const settingsCol = 'settings';
+const UNREGISTERED_EVENT = 'unregistered'
 
 
 var db;
@@ -55,7 +56,7 @@ function * writeToRawData(message){
 }
 
 function* writeToEventMetric(queryObject, historicData){
-	if (queryObject["id_falta"] === 'unregistered'){
+	if (queryObject["id_falta"] === UNREGISTERED_EVENT){
 		return 
 	}
     /*
@@ -75,7 +76,7 @@ function* writeToEventMetric(queryObject, historicData){
 }
 
 function* writeToEventMetricMontly(queryObject, numWeek, month){
-	if (queryObject["id_falta"] === 'unregistered'){
+	if (queryObject["id_falta"] === UNREGISTERED_EVENT){
 		return 
 	}
 	let weekString = `week.${numWeek}`;
@@ -201,6 +202,7 @@ function getNewUnitObject(unitId){
         "descripcion" : "SIN-REGISTRO",
         "dispositivo_actual" : unitId,
         "icono" : "icon-icon_cart",
+        "eventList":[],
         "sensores" : {
             "temperatura" : false,
             "compresion" : false,
@@ -230,6 +232,7 @@ function* registerUnit(unitId) {
 }
 
 function* getEventInfo(eventCode, companyId) {
+    //event/faul
 	eventCode = parseInt(eventCode);
 	let col = db.collection(eventCol);
 	let result = yield col.findOne({"evento":eventCode, "id_empresa":companyId})
@@ -239,8 +242,39 @@ function* getEventInfo(eventCode, companyId) {
 		return result
 	}
     console.log(`uregisted event ${eventCode}`);
-	return 'unregistered';
+	return UNREGISTERED_EVENT;
 }
+
+// function* hasFaulsAssigment(unitId) {
+//     if(!(ObjectId.isValid(unitId))) {
+//         throw 'unitId must be a valid ObjectId';
+//     }
+//     let col = db.collection(unitsCol);
+//     let result = yield col.findOne({"_id":})
+// }
+
+function* getEventInfoById(faulId,companyId) {
+    if (!(ObjectId.isValid(faulId)) || !(ObjectId.isValid(companyId))){
+        throw "faulId and companyId both must be valid ObjectIds";
+    }
+    let col = db.collection(eventCol);
+    let result = yield col.findOne({"_id":faulId,"id_empresa":companyId})
+    if (result !== null) {
+        console.log('Event/Faul found');
+        console.log(result);
+        return result;
+    }
+    return UNREGISTERED_EVENT; 
+
+}
+
+function * getEventList(eventList) {
+    detailedEventList = []
+    eventList.map( eventId => {
+        detailedEventList.push(yield getEventInfoById(eventId))
+
+    });
+    return detailedEventList;
 
 
 function* getDriverInfo(driverId){
@@ -268,4 +302,6 @@ module.exports = {
     updateCurrentState,
     updateLastnPositions,
     getEventInfo,
+    getEventInfoById,
+    getEventList,
 }

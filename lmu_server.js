@@ -14,9 +14,12 @@ const url = 'mongodb://imonnetplus.com.bo:27017/platform2';
 
 winston.add(winston.transports.File, {filename: 'lmu.log', level:'debug'});
 
-function LMU_Server(chan){
+function LMU_Server(chan, args){
     let devices = []
     let clients = [];
+    let devicePort = parseInt(args[0]);
+    let clientPort = parseInt(args[1]);
+
     const server = dgram.createSocket("udp4");
 
     /**
@@ -124,7 +127,8 @@ openAmqp.then(conn => {
 		console.log("Connection stablished to Broker imnonetplus.com.bo")
 		co(dataAccessConnect.connect(url))
 		.then(()=>{
-            new LMU_Server(chan);
+            let args = process.argv.slice(2);
+            new LMU_Server(chan, args);
 		}).catch(err =>{
 			winston.log('error',`An error has occurred when initializing the server: ${err}`)
 		})

@@ -1,7 +1,12 @@
+import { watch } from "fs";
+
 const reverseGeocoding = require("../reversegeocoding.js");
 const getUnitInfo = require("../data_access.js").getUnitInfo;
 const getDriverInfo = require("../data_access.js").getDriverInfo;
 const getEventInfo = require("../data_access.js").getEventInfo;
+const getEventList = require("../data_access.js").getEventList;
+//const getEventInfoById = require("../data_access.js").getEventInfoById;
+const utils = require("../utils.js");
 const co = require('co');
 
 const accumCountFlag = 0x3F;
@@ -46,6 +51,20 @@ function getPotableMessage(decodedMessage) {
             potableMessage["eventCode"] = decodedMessage["eventCode"];
             potableMessage["heading"] = decodedMessage["heading"];
             potableMessage["odometer"] = getOdometer(decodedMessage);
+            if(utils.hasFauls(unitInfo["_id"])) {
+                // unitInfo["eventList"].map( eventId => {
+                //     co(getEventInfoById(eventId))
+                //     .then(eventDetails => potableMessage['eventList'].append(eventDetails));
+                // })
+                return co(getEventList(unitInfo['eventList']));
+
+            }
+            return []
+        }).then(detailedEventList => {
+            console.log(`Detailed Event List ${detailedEventList}`);
+            console.log(detailedEventList);
+            potableMessage['eventList'] = detailedEventList;
+
             if (decodedMessage["accumList"].length >= 3){
                 if (decodedMessage["accumList"][2] !== 0){
                     //when the unit is On the driver id comes at index 2 and must be not equal to zero
@@ -60,10 +79,10 @@ function getPotableMessage(decodedMessage) {
                 }
             }
             //there is no driver info in the message (N/A)
-            return new Promise((resolve, reject) => {
-                resolve(null)
-            })
-
+            //return new Promise((resolve, reject) => {
+                //resolve(null)
+            //})
+            return null;
         }).then(driverInfo => {
             potableMessage["driver"] = {};
             if (driverInfo === null){
@@ -92,6 +111,7 @@ function getPotableMessage(decodedMessage) {
         }).then(nearest => {
             potableMessage["geoReference"]["nearest"] = nearest["name"];
             potableMessage["geoReference"]["distanceToNearest"] = nearest["distance"];
+            //return co(getEventInfo(decodedMessage["eventCode"], companyId))
             return co(getEventInfo(decodedMessage["eventCode"], companyId))
         }).then(eventInfo => {
             if(eventInfo !== 'unregistered'){

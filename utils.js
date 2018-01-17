@@ -44,8 +44,26 @@ function getFormerPositions(unitId){
     return p;
 }
 
+function hasFauls(msg){
+	if ('eventList' in msg && msg['eventList'].length) {
+		return true;
+	}
+	return false;
+}
+
+function * getEventList(eventList) {
+    detailedEventList = []
+    eventList.map( eventId => {
+        detailedEventList.push(yield getEventInfoById(eventId))
+
+    });
+    return detailedEventList;
+}
+
+
 
 module.exports = {
     isMoving,
     setInitStopTime,
+    hasFauls,
 }
