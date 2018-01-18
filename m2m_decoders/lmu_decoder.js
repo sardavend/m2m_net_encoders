@@ -62,8 +62,7 @@ function getPotableMessage(decodedMessage) {
                 //     co(getEventInfoById(eventId))
                 //     .then(eventDetails => potableMessage['eventList'].append(eventDetails));
                 // })
-                return co(getEventList(unitInfo['eventList']));
-
+                return getEventList(unitInfo['eventList']);
             }
             return []
         }).then(detailedEventList => {

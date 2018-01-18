@@ -280,14 +280,19 @@ function getEventInfoById(faulId,companyId) {
 }
 
 function getEventList(eventList, companyId) {
+    
     let p = new Promise((resolve, reject) => {
+        if (eventList.lenght >0) {
+            reject('eventList is empty');
+        }
         console.log(eventList);
-        detailedEventList = [];
-        eventList.map( eventId => {
-            //detailedEventList.push(yield getEventInfoById(eventId, ))
-            getEventInfoById(eventId, companyId);
-        });
-        return detailedEventList;
+        detailedEventList = []
+        resolve(Promise.all(eventList.map(eventId => {
+            if (ObjectId.isValid(eventId)){
+
+            }
+            return getEventInfoById(eventId, companyId);
+        })));
     });
     return p;
 
