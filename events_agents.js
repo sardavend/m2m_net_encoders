@@ -1,3 +1,5 @@
+import { WSAEINVALIDPROCTABLE } from 'constants';
+
 const amqpOpen = require('amqplib').connect('amqp://imonnetplus.com.bo');
 const url = 'mongodb://imonnetplus.com.bo:27017/platform2';
 const co = require('co');
@@ -10,6 +12,7 @@ const writeToEventMetricMontly = require('./data_access.js').writeToEventMetricM
 const writeWebNotification = require('./data_access.js').writeWebNotification;
 const updateCurrentState = require('./data_access.js').updateCurrentState;
 const updateLastnPositions = require('./data_access.js').updateLastnPositions;
+const utils = require('./utils.js');
 // var all = require('bluebird').all
 const xchange = 'main_valve';
 
@@ -105,7 +108,67 @@ function getNotificationObject(msg) {
 	return notiObject;
 }
 
+function checkSchedule(updateTime, startDate, endDate) {
+	if (updateTime >= startDate && updateTime <= endDate){
+		return true;
+	}
+	return false;
+}
 
+function getUnauthorizedSchedule(updateTime, startHour, duration){
+	// let bolivianTime = new Date(updateTime.getTime() - 14400000);
+	let bolivianTime = utils.utcToBolDate(updateTime);
+	let startDate = bolivianTime.setHours(startHour,0,0);
+	let endDate = new Date(startDate.getTime() + duartion * 3600 * 1000);
+	return {
+		startDate: startDate,
+		endDate: endDate
+	}
+}
+
+function checkUnauthorizedSchedule(msg, days, startHour, duration){
+	//let day = msg['updateTime'].getDay();
+	let bolUpdateTime = utils.utcToBolDate(msg['updateTime']);
+	let day = bolUpdateTime.getDay();
+	let uaSchedule= getUnauthorizedSchedule(msg['updateTime'], startHour, duration);
+	if (day in days && checkSchedule(bolUpdateTime, uaSchedule.startDate, uaSchedule.endDate)){
+		return true;
+	}
+	return false;
+
+}
+
+function evaluateUnauthorizedDriving(unit, pMsg, faul) {
+	let p = new Promise((resolve, reject) => {
+		if (!pMsg.hasOwnProperty('setting') && !pMsg['setting'].hasOwnProperty('min_speed')){
+			throw `Unit ${unit} without a valid setting`;
+		}
+		if(pMsg['speed']> pMsg['setting']['min_speed']){
+			if(unit['isDrivingUnauthorized'] && !checkUnauthorizedSchedule(pMsg, faul['dias'],faul['hora_inicial'],faul['duracion'])){
+				//if was driving unathorized but their schedule is no longer valid
+					co(setUnathorizedDrivingState(unit['unitInstanceId'], false))
+				.then(() => {
+					co(saveUnauthorizedDrivingHistoric(unit['unitInstanceId'], 'end'));
+				});
+			}
+			if(!unit['isDrivingUnauthorized'] && checkUnauthorizedSchedule(pMsg, faul['dias'],faul['hora_inicial'],faul['duracion'])){
+				setUnathorizedDrivingState(unit['unitInstanceId'], true);
+				increaseFaulCountDay(unitInstanceId, );
+				saveUnauthorizedDrivingHistoric(unitInstanceId, 'start');
+			}
+		} else{
+			setUnathorizedDrivingState(unitId, false);
+			saveUnauthorizedDrivingHistoric(unitInstanceId, 'end');
+		}
+	})
+	return p;
+
+
+} 
+
+
+
+//main
 co(persistenceOpen.connect(url)).then(() =>{
     console.log("Connected to Mongodb")
     amqpOpen

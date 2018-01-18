@@ -1,10 +1,11 @@
-import { watch } from "fs";
+//import { watch } from "fs";
 
 const reverseGeocoding = require("../reversegeocoding.js");
 const getUnitInfo = require("../data_access.js").getUnitInfo;
 const getDriverInfo = require("../data_access.js").getDriverInfo;
 const getEventInfo = require("../data_access.js").getEventInfo;
 const getEventList = require("../data_access.js").getEventList;
+const getUnitSetting = require("../data_access.js").getUnitSetting;
 //const getEventInfoById = require("../data_access.js").getEventInfoById;
 const utils = require("../utils.js");
 const co = require('co');
@@ -51,7 +52,12 @@ function getPotableMessage(decodedMessage) {
             potableMessage["eventCode"] = decodedMessage["eventCode"];
             potableMessage["heading"] = decodedMessage["heading"];
             potableMessage["odometer"] = getOdometer(decodedMessage);
-            if(utils.hasFauls(unitInfo["_id"])) {
+            potableMessage["setting"] = {};
+            if (utils.hasSetting(unitInfo)){
+                potableMessage["setting"]["id"] = unitInfo["setting_id"];
+            }
+
+            if(utils.hasFauls(unitInfo)) {
                 // unitInfo["eventList"].map( eventId => {
                 //     co(getEventInfoById(eventId))
                 //     .then(eventDetails => potableMessage['eventList'].append(eventDetails));
@@ -64,7 +70,17 @@ function getPotableMessage(decodedMessage) {
             console.log(`Detailed Event List ${detailedEventList}`);
             console.log(detailedEventList);
             potableMessage['eventList'] = detailedEventList;
+            if(utils.hasSetting(unitInfo)) {
+                return co(getUnitSetting(potableMessage['setting']['id']));
 
+            }
+            return null;
+        }).then(settingDetails => {
+            if (settingDetails === null) {
+                potableMessage['setting'] = {};
+            } else {
+                potableMessage['setting'] = settingDetails;
+            }
             if (decodedMessage["accumList"].length >= 3){
                 if (decodedMessage["accumList"][2] !== 0){
                     //when the unit is On the driver id comes at index 2 and must be not equal to zero
@@ -78,12 +94,8 @@ function getPotableMessage(decodedMessage) {
                     // driverKeyId += "*";
                 }
             }
-            //there is no driver info in the message (N/A)
-            //return new Promise((resolve, reject) => {
-                //resolve(null)
-            //})
             return null;
-        }).then(driverInfo => {
+       }).then(driverInfo => {
             potableMessage["driver"] = {};
             if (driverInfo === null){
                 potableMessage["driver"]["id"] = "N/A";

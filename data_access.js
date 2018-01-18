@@ -49,6 +49,12 @@ function * writeToDataUnitLog(message){
     yield save(dataUnitColl, message);
 }
 
+function *setUnauthorizedDrivingState(unitInstanceId, state){
+    let query = {"_id": ObjectId(unitInstanceId)},
+        udp = {"$set":{"isDrivingUnauthorized":state}}
+    yield update(unitsCol, query, udp);
+}
+
 function * writeToRawData(message){
     message["unitInstanceId"] = ObjectId(message["unitInstanceId"]);
     message["updateTime"] = new Date(message["updateTime"]);
@@ -253,28 +259,38 @@ function* getEventInfo(eventCode, companyId) {
 //     let result = yield col.findOne({"_id":})
 // }
 
-function* getEventInfoById(faulId,companyId) {
-    if (!(ObjectId.isValid(faulId)) || !(ObjectId.isValid(companyId))){
-        throw "faulId and companyId both must be valid ObjectIds";
-    }
-    let col = db.collection(eventCol);
-    let result = yield col.findOne({"_id":faulId,"id_empresa":companyId})
-    if (result !== null) {
-        console.log('Event/Faul found');
-        console.log(result);
-        return result;
-    }
-    return UNREGISTERED_EVENT; 
+function getEventInfoById(faulId,companyId) {
+    let p = new Promise((resolve, reject) => {
+        if (!(ObjectId.isValid(faulId)) || !(ObjectId.isValid(companyId))){
+            throw "faulId and companyId both must be valid ObjectIds";
+        }
+        let col = db.collection(eventCol);
+        col.findOne({"_id":faulId,"id_empresa":companyId})
+        .then(result => {
+            if (result !== null) {
+                console.log('Event/Faul found');
+                console.log(result);
+                resolve(result);
+            }
+            resolve(UNREGISTERED_EVENT); 
+        })
+    });
+    return p;
 
 }
 
-function * getEventList(eventList) {
-    detailedEventList = []
-    eventList.map( eventId => {
-        detailedEventList.push(yield getEventInfoById(eventId))
-
+function getEventList(eventList, companyId) {
+    let p = new Promise((resolve, reject) => {
+        console.log(eventList);
+        detailedEventList = [];
+        eventList.map( eventId => {
+            //detailedEventList.push(yield getEventInfoById(eventId, ))
+            getEventInfoById(eventId, companyId);
+        });
+        return detailedEventList;
     });
-    return detailedEventList;
+    return p;
+
 
 
 function* getDriverInfo(driverId){

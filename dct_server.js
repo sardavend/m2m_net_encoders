@@ -7,13 +7,17 @@ const co = require('co');
 const decoder= require('./m2m_decoders/dct_decoder');
 const reverseGeocoding = require('./reversegeocoding.js');
 const dataAccessConnect = require('./data_access.js');
-const port = 1996;
+//const port = 1996;
+const port = 2000;
 const xchange= 'main_valve';
 
 const url = 'mongodb://imonnetplus.com.bo:27017/platform2';
+const NEWLINE =/(\r\n|\n|\r)/gm
 
-const rastracIp = "190.180.25.104",
-     rastracPort = 1801
+// const rastracIp = "190.180.25.104",
+//      rastracPort = 1801
+const rastracIp = "190.180.25.101",
+      rastracPort = 1811
 
 winston.add(winston.transports.File, {filename: 'dct.log', level:'debug'});
 
@@ -73,9 +77,9 @@ function DCTServer(chan){
         });
     })
 
-    serverClient.listen(8005,() => {
-        winston.log('debug',`Server DCT Clients started on port 8000`);
-        console.log(`Server DCT Clients started on port 8000`);
+    serverClient.listen(9005,() => {
+        winston.log('debug',`Server DCT Clients started on port 9005`);
+        console.log(`Server DCT Clients started on port 9005`);
 
     })
     serverClient.on('error',err => {
@@ -122,6 +126,7 @@ function DCTServer(chan){
         // msg = msg.toString('hex');
         msg +='@';
         msg = msg.toUpperCase();
+        msg = msg.replace(NEWLINE,'');
         winston.log('debug', msg);
         broadcast(msg);
     })

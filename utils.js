@@ -1,6 +1,9 @@
+import { watch } from "fs";
+
 const redis = require("redis"), 
       client = redis.createClient();
 const currentPosition = 'CURRENT_POSITION', formerPosition = 'FORMER_POSITION';
+
 
 client.on("error", err => console.log("Error " + err));
 
@@ -44,21 +47,27 @@ function getFormerPositions(unitId){
     return p;
 }
 
-function hasFauls(msg){
-	if ('eventList' in msg && msg['eventList'].length) {
+function hasSetting(msg){
+	if (msg.hasOwnProperty('setting_id') && msg['setting_id'] !== null) {
 		return true;
 	}
 	return false;
 }
 
-function * getEventList(eventList) {
-    detailedEventList = []
-    eventList.map( eventId => {
-        detailedEventList.push(yield getEventInfoById(eventId))
-
-    });
-    return detailedEventList;
+function hasFauls(msg){
+	if (msg.hasOwnProperty('eventList') && msg['eventList'].length) {
+		return true;
+	}
+    return false;
 }
+
+
+function utcToBolDate(utcDate){
+    return new Date(utcDate.getTime() - 14400000);
+}
+
+
+
 
 
 
@@ -66,4 +75,6 @@ module.exports = {
     isMoving,
     setInitStopTime,
     hasFauls,
+    hasSetting,
+    utcToBolDate,
 }
