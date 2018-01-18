@@ -289,12 +289,12 @@ function getEventList(eventList, companyId) {
         detailedEventList = []
         resolve(Promise.all(eventList.map(eventId => {
             if (ObjectId.isValid(eventId)){
-
+                return getEventInfoById(eventId, companyId);
             }
-            return getEventInfoById(eventId, companyId);
         })));
     });
     return p;
+}
 
 
 

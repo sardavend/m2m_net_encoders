@@ -1,5 +1,3 @@
-import { watch } from "fs";
-
 const redis = require("redis"), 
       client = redis.createClient();
 const currentPosition = 'CURRENT_POSITION', formerPosition = 'FORMER_POSITION';

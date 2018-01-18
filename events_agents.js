@@ -1,4 +1,3 @@
-import { WSAEINVALIDPROCTABLE } from 'constants';
 
 const amqpOpen = require('amqplib').connect('amqp://imonnetplus.com.bo');
 const url = 'mongodb://imonnetplus.com.bo:27017/platform2';

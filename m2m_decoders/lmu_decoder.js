@@ -55,6 +55,8 @@ function getPotableMessage(decodedMessage) {
             potableMessage["setting"] = {};
             if (utils.hasSetting(unitInfo)){
                 potableMessage["setting"]["id"] = unitInfo["setting_id"];
+            } else {
+                potableMessage["setting"]["id"] = null;
             }
 
             if(utils.hasFauls(unitInfo)) {
@@ -69,7 +71,7 @@ function getPotableMessage(decodedMessage) {
             console.log(`Detailed Event List ${detailedEventList}`);
             console.log(detailedEventList);
             potableMessage['eventList'] = detailedEventList;
-            if(utils.hasSetting(unitInfo)) {
+            if(potableMessage["setting"]["id"] !== null) {
                 return co(getUnitSetting(potableMessage['setting']['id']));
 
             }
