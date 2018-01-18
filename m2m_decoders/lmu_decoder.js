@@ -1,4 +1,3 @@
-//import { watch } from "fs";
 
 const reverseGeocoding = require("../reversegeocoding.js");
 const getUnitInfo = require("../data_access.js").getUnitInfo;
@@ -64,7 +63,7 @@ function getPotableMessage(decodedMessage) {
                 //     co(getEventInfoById(eventId))
                 //     .then(eventDetails => potableMessage['eventList'].append(eventDetails));
                 // })
-                return getEventList(unitInfo['eventList']);
+                return getEventList(unitInfo['eventList'], unitInfo['empresa']);
             }
             return []
         }).then(detailedEventList => {

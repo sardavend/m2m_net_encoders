@@ -1,3 +1,4 @@
+
 const MongoClient = require('mongodb').MongoClient;
 const ObjectId = require('mongodb').ObjectID;
 
@@ -31,6 +32,17 @@ function* save(coll, insertObject){
 }
 function* update(coll,cond, updateObject){
     yield db.collection(coll).update(cond, updateObject,{"upsert":true});
+}
+
+function updateUnathorizedDriving(unitInstanceId, state){
+    let cond = {"_id":unitInstanceId}
+    let uo = {"$set":{"isDrivingUnauthorized":state}}
+    return new Promise((resolve, reject) => {
+        co(update(unitsCol, cond, uo))
+        .then(result => resolve())
+        .catch(err => reject());
+    })
+
 }
 
 function * writeWebNotification(message) {
@@ -322,6 +334,7 @@ module.exports = {
     updateUnitState,
     updateCurrentState,
     updateLastnPositions,
+    updateUnathorizedDriving,
     getEventInfo,
     getEventInfoById,
     getEventList,

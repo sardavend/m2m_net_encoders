@@ -5,12 +5,14 @@ const co = require('co');
 const moment = require('moment');
 const persistenceOpen = require('./data_access.js');
 // const persistenceOpen = require('./persistence.js').connect(url);
+const getUnitInfo = require('./data_access.js').getUnitInfo;
 const writeToRawData = require('./data_access.js').writeToRawData;
 const writeToEventMetric = require('./data_access.js').writeToEventMetric;
 const writeToEventMetricMontly = require('./data_access.js').writeToEventMetricMontly;
 const writeWebNotification = require('./data_access.js').writeWebNotification;
 const updateCurrentState = require('./data_access.js').updateCurrentState;
 const updateLastnPositions = require('./data_access.js').updateLastnPositions;
+const updateUnauthorizedDriving = require('./data_access.js').updateUnathorizedDriving;
 const utils = require('./utils.js');
 // var all = require('bluebird').all
 const xchange = 'main_valve';
@@ -106,6 +108,38 @@ function getNotificationObject(msg) {
 	}
 	return notiObject;
 }
+var eventFauls = {
+	'conduccion_no_autorizada':evaluateUnauthorizedDriving,
+	'exceso':() => new Promise((resolve, reject) => resolve('exceso foul type is not implemented by software yet')),
+	'conduccion_prolongada': () => new Promise((resolve, reject) => resolve('conduccion_prolongada foul type is not implemented by software yet')),
+	'evento': () => new Promise((resolve, reject) => resolve('evento type is not implemente by software yet'))
+}
+
+function evaluateEventFaul(unitInstanceId, eventList, pMsg) {
+	return new Promise((resolve, reject) => {
+		co(getUnitInfo(unitInstanceId))
+		.then(unitInfo => {
+			eventList.map(eventObject => {
+				eventFauls[eventObject['id_tipo']](unitInfo, pMsg, eventObject)
+				.then((result) => resolve(result));
+
+			})
+		})
+	})
+
+
+}
+
+function setUnathorizedDrivingState(unitInstanceId, state) {
+	return new Promise((resolve, reject) => {
+		updateUnauthorizedDriving(unitInstanceId, state)
+		.then(() =>{
+			resolve();
+		})
+	})
+	//'isDrivingUnauthorized'
+}
+
 
 function checkSchedule(updateTime, startDate, endDate) {
 	if (updateTime >= startDate && updateTime <= endDate){
@@ -145,17 +179,17 @@ function evaluateUnauthorizedDriving(unit, pMsg, faul) {
 		if(pMsg['speed']> pMsg['setting']['min_speed']){
 			if(unit['isDrivingUnauthorized'] && !checkUnauthorizedSchedule(pMsg, faul['dias'],faul['hora_inicial'],faul['duracion'])){
 				//if was driving unathorized but their schedule is no longer valid
-					co(setUnathorizedDrivingState(unit['unitInstanceId'], false))
+				setUnathorizedDrivingState(unit['unitInstanceId'], false)
 				.then(() => {
-					co(saveUnauthorizedDrivingHistoric(unit['unitInstanceId'], 'end'));
+					//co(saveUnauthorizedDrivingHistoric(unit['unitInstanceId'], 'end'));
 				});
 			}
 			if(!unit['isDrivingUnauthorized'] && checkUnauthorizedSchedule(pMsg, faul['dias'],faul['hora_inicial'],faul['duracion'])){
 				setUnathorizedDrivingState(unit['unitInstanceId'], true);
-				increaseFaulCountDay(unitInstanceId, );
-				saveUnauthorizedDrivingHistoric(unitInstanceId, 'start');
+				//increaseFaulCountDay(unitInstanceId, );
+				//saveUnauthorizedDrivingHistoric(unitInstanceId, 'start');
 			}
-		} else{
+		} else if(unit['isDrivingUnauthorized']){
 			setUnathorizedDrivingState(unitId, false);
 			saveUnauthorizedDrivingHistoric(unitInstanceId, 'end');
 		}
@@ -201,6 +235,15 @@ co(persistenceOpen.connect(url)).then(() =>{
             let content = msg.content.toString();
             let contentJson = JSON.parse(content);
 			let uT = getUnitStateDate(contentJson["updateTime"]);
+			evaluateEventFaul(contentJson['unitInstanceId'], contentJson['eventList'], contentJson)
+			.then(result => {
+				console.log('faltas eveluadas');
+				console.log(contentJson['eventList']);
+
+			})
+
+
+
 			let metricQuery = getMetricQuery(contentJson["unitInstanceId"], contentJson["eventId"], contentJson["eventType"],uT);
 			if(contentJson["driver"]["id"] !== "N/A"){
 				//let metricQueryDriver = getMetricQueryDriver(contentJson["driver"]["id"], contentJson["eventId"], contentJson["eventType"], uT)
