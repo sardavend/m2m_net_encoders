@@ -181,13 +181,13 @@ function evaluateUnauthorizedDriving(unit, pMsg, faul) {
 				//if was driving unathorized but their schedule is no longer valid
 				setUnathorizedDrivingState(unit['unitInstanceId'], false)
 				.then(() => {
-					//co(saveUnauthorizedDrivingHistoric(unit['unitInstanceId'], 'end'));
+					co(saveUnauthorizedDrivingHistoric(unit['unitInstanceId'], 'end'));
 				});
 			}
 			if(!unit['isDrivingUnauthorized'] && checkUnauthorizedSchedule(pMsg, faul['dias'],faul['hora_inicial'],faul['duracion'])){
 				setUnathorizedDrivingState(unit['unitInstanceId'], true);
 				//increaseFaulCountDay(unitInstanceId, );
-				//saveUnauthorizedDrivingHistoric(unitInstanceId, 'start');
+				saveUnauthorizedDrivingHistoric(unitInstanceId, 'start');
 			}
 		} else if(unit['isDrivingUnauthorized']){
 			setUnathorizedDrivingState(unitId, false);
