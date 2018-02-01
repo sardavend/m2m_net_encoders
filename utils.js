@@ -61,7 +61,8 @@ function hasFauls(msg){
 
 
 function utcToBolDate(utcDate){
-    return new Date(utcDate.getTime() - 14400000);
+    //return new Date(utcDate.getTime() - 14400000);
+    return new Date(utcDate - 14400000);
 }
 
 

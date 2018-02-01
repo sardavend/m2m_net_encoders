@@ -45,6 +45,52 @@ function updateUnathorizedDriving(unitInstanceId, state){
 
 }
 
+function saveUnauthorizedDrivingHistoric(unitInstanceId, faul, startEnd, msg){
+    return new Promise((resolve, reject) => {
+        let filter = {"id_falta":faul["_id"], "unitInstanceId":unitInstanceId};
+        if (startEnd === 'end') {
+            let updateObject = {
+                "$set":{
+                    "endDate":msg["updateTime"],
+                    "endReference":msg["nearestGeoreference"],
+                }
+            }
+            db.collection('faltas.metricas.diarias').findAndModify(
+                filter,
+                {"sort":[['updateTime',1]]},
+                updateObject,
+            ).then(result => {
+                //getDistance();
+                let duracion = (result["startDate"].getTime() - msg["updateTime"].getTime()/1000/60);
+                let updateConsObject = {
+                    "$set":{
+                        "duracion":duracion
+                        //"distancia":distancia,
+                    }
+                };
+                db.collection('faltas.metricas.diarias').update(
+                    {"_id":result["_id"]},
+                    updateConsObject,  
+                ).then(result => resolve("ok"));
+            })
+
+        } else {
+            let updateOp = {
+                "$set":{
+                    "startDate":msg["updateTime"],
+                    "startGeoreference": msg["nearestGeoreference"],
+                },
+                "$inc":{"total":1}
+            }
+            db.collection('faltas.metricas.diarias').update({
+                filter,
+                updateOp 
+            }).then(result => resolve("ok"));
+        }
+    });
+    
+}
+
 function * writeWebNotification(message) {
 	//legacy function to mantain current web notification working
     if (message  == undefined){
@@ -338,4 +384,5 @@ module.exports = {
     getEventInfo,
     getEventInfoById,
     getEventList,
+    saveUnauthorizedDrivingHistoric,
 }
